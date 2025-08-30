@@ -43,6 +43,9 @@ plt.imshow(roi_color,cmap='gray')
 
 def get_cropped_img_if_2_eyes(img_path):
     img=cv2.imread(img_path)
+    if img is None:  # file is not a valid image
+        print("Skipping file (not an image):", img_path)
+        return None
     gray=cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     faces=face_cascade.detectMultiScale(gray,1.3,5)
     for (x,y,w,h) in faces:
@@ -68,3 +71,36 @@ for entry in os.scandir(path_to_data):
         img_dirs.append(entry.path)
 
 # print(img_dirs)
+
+import shutil
+if os.path.exists(path_to_cr_data):
+    shutil.rmtree(path_to_cr_data)
+os.mkdir(path_to_cr_data)
+
+cropped_img_dirs=[]
+celebrity_file_names_dict={}
+
+for img_dir in img_dirs:
+    count=1
+    celeb_name=img_dir.split('/')[-1]
+    print(celeb_name)
+
+    celebrity_file_names_dict[celeb_name]=[]
+
+    for entry in os.scandir(img_dir):
+        roi_color=get_cropped_img_if_2_eyes(entry.path)
+        if roi_color is not None:
+            cropped_folder=path_to_cr_data+celeb_name
+            if not os.path.exists(cropped_folder):
+                os.makedirs(cropped_folder)
+                cropped_img_dirs.append(cropped_folder)
+                print('generating cropped images in folder: ', cropped_folder)
+            
+            cropped_file_name=celeb_name+str(count)+".jpg"
+            cropped_file_path=cropped_folder+"/"+cropped_file_name
+
+            cv2.imwrite(cropped_file_path,roi_color)
+            celebrity_file_names_dict[celeb_name].append(cropped_file_path)
+            count+=1
+
+
